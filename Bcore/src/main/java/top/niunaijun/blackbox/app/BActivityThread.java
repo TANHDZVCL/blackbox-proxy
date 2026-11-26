@@ -66,6 +66,7 @@ import top.niunaijun.blackbox.core.CrashHandler;
 import top.niunaijun.blackbox.core.IBActivityThread;
 import top.niunaijun.blackbox.core.IOCore;
 import top.niunaijun.blackbox.core.NativeCore;
+import top.niunaijun.blackbox.proxy.ProfileProxy;
 import top.niunaijun.blackbox.core.env.VirtualRuntime;
 import top.niunaijun.blackbox.core.system.user.BUserHandle;
 import top.niunaijun.blackbox.entity.AppConfig;
@@ -400,6 +401,9 @@ public class BActivityThread extends IBActivityThread.Stub {
         }
 
         NativeCore.init(Build.VERSION.SDK_INT);
+        // Before any app code runs, and before file redirection hides the
+        // host's own configuration files from this process.
+        ProfileProxy.enforceForCurrentProcess(getUserId());
         assert packageContext != null;
         IOCore.get().enableRedirect(packageContext);
 

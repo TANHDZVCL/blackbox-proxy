@@ -38,6 +38,12 @@ public class NativeCore {
     
     public static native boolean disableResourceLoading();
 
+    /**
+     * Routes every outbound connection of this process through the proxy.
+     * Returns false when that could not be enforced.
+     */
+    public static native boolean enableProxy(int type, String ip, int port, String user, String pass);
+
 
     @Keep
     public static int getCallingUid(int origCallingUid) {

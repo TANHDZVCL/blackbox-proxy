@@ -14,6 +14,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
 import top.niunaijun.blackbox.BlackBoxCore
+import top.niunaijun.blackbox.proxy.ProfileProxy
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.app.App
 import top.niunaijun.blackboxa.app.AppManager
@@ -24,6 +25,7 @@ import top.niunaijun.blackboxa.view.apps.AppsFragment
 import top.niunaijun.blackboxa.view.base.LoadingActivity
 import top.niunaijun.blackboxa.view.fake.FakeManagerActivity
 import top.niunaijun.blackboxa.view.list.ListActivity
+import top.niunaijun.blackboxa.view.proxy.ProxyDialog
 import top.niunaijun.blackboxa.view.setting.SettingActivity
 
 class MainActivity : LoadingActivity() {
@@ -256,13 +258,13 @@ class MainActivity : LoadingActivity() {
                         title(res = R.string.userRemark)
                         input(
                                 hintRes = R.string.userRemark,
-                                prefill = viewBinding.toolbarLayout.toolbar.subtitle
+                                prefill = profileName(currentUser)
                         ) { _, input ->
                             try {
                                 AppManager.mRemarkSharedPreferences.edit {
                                     putString("Remark$currentUser", input.toString())
-                                    viewBinding.toolbarLayout.toolbar.subtitle = input
                                 }
+                                updateUserRemark(currentUser)
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error saving user remark: ${e.message}")
                             }
@@ -357,15 +359,24 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    private fun profileName(userId: Int): String {
+        val remark = AppManager.mRemarkSharedPreferences.getString("Remark$userId", null)
+        return if (remark.isNullOrEmpty()) "User $userId" else remark
+    }
+
     private fun updateUserRemark(userId: Int) {
         try {
-            var remark =
-                    AppManager.mRemarkSharedPreferences.getString("Remark$userId", "User $userId")
-            if (remark.isNullOrEmpty()) {
-                remark = "User $userId"
+            var subtitle = profileName(userId)
+            // A profile whose proxy file cannot be read will refuse to start
+            // its apps; show that instead of pretending it is direct.
+            val proxy = try {
+                ProfileProxy.load(userId)?.summary()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error reading proxy of profile $userId: ${e.message}")
+                "proxy: ${e.message}"
             }
-
-            viewBinding.toolbarLayout.toolbar.subtitle = remark
+            if (proxy != null) subtitle += " · $proxy"
+            viewBinding.toolbarLayout.toolbar.subtitle = subtitle
         } catch (e: Exception) {
             Log.e(TAG, "Error updating user remark: ${e.message}")
             viewBinding.toolbarLayout.toolbar.subtitle = "User $userId"
@@ -416,6 +427,12 @@ class MainActivity : LoadingActivity() {
                 R.id.main_tg -> {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/newblackboxa"))
                     startActivity(intent)
+                }
+                R.id.profile_proxy -> {
+                    val profile = currentUser
+                    ProxyDialog.show(this, profile, profileName(profile)) {
+                        if (profile == currentUser) updateUserRemark(profile)
+                    }
                 }
                 R.id.fake_location -> {
                     

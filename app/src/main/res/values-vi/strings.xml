@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_proxy">Proxy cho profile này</string>
+    <string name="proxy_title">Proxy · %s</string>
+    <string name="proxy_type_none">Trực tiếp</string>
+    <string name="proxy_host">Host hoặc địa chỉ IP</string>
+    <string name="proxy_port">Cổng</string>
+    <string name="proxy_user">Tên đăng nhập (không bắt buộc)</string>
+    <string name="proxy_pass">Mật khẩu (không bắt buộc)</string>
+    <string name="proxy_save">Lưu</string>
+    <string name="proxy_test">Kiểm tra</string>
+    <string name="proxy_invalid">Hãy nhập host và cổng từ 1 đến 65535.</string>
+    <string name="proxy_testing">Đang kết nối qua proxy…</string>
+    <string name="proxy_test_ok">Hoạt động. IP đầu ra: %s</string>
+    <string name="proxy_test_failed">Không hoạt động: %s</string>
+    <string name="proxy_saved">Đã lưu. Các app đang chạy của profile này đã bị dừng; lần mở sau sẽ đi qua proxy.</string>
+    <string name="proxy_removed">Đã gỡ proxy. Các app đang chạy của profile này đã bị dừng.</string>
+    <string name="proxy_save_failed">Không lưu được proxy: %s</string>
+    <string name="proxy_note">Toàn bộ lưu lượng TCP của profile này đi qua proxy. UDP (QUIC, cuộc gọi) bị chặn, và app của profile sẽ không mở nếu không áp dụng được proxy.</string>
+</resources>

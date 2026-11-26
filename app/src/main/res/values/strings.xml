@@ -67,4 +67,23 @@
     <string name="disable_gms">Disable Service</string>
     <string name="disable_gms_hint">Clear the current Google service environment? Google service data will be cleared.</string>
     <string name="no_gms">Currently, there is no Google service environment on mobile phones.</string>
+    <string name="profile_proxy">Proxy for this profile</string>
+    <string name="proxy_title">Proxy · %s</string>
+    <string name="proxy_type_none">Direct</string>
+    <string name="proxy_type_socks5">SOCKS5</string>
+    <string name="proxy_type_http">HTTP</string>
+    <string name="proxy_host">Host or IP address</string>
+    <string name="proxy_port">Port</string>
+    <string name="proxy_user">Username (optional)</string>
+    <string name="proxy_pass">Password (optional)</string>
+    <string name="proxy_save">Save</string>
+    <string name="proxy_test">Test</string>
+    <string name="proxy_invalid">Enter a host and a port between 1 and 65535.</string>
+    <string name="proxy_testing">Connecting through the proxy…</string>
+    <string name="proxy_test_ok">Working. Exit IP: %s</string>
+    <string name="proxy_test_failed">Not working: %s</string>
+    <string name="proxy_saved">Saved. Running apps of this profile were stopped; they use the proxy from their next start.</string>
+    <string name="proxy_removed">Proxy removed. Running apps of this profile were stopped.</string>
+    <string name="proxy_save_failed">Could not save the proxy: %s</string>
+    <string name="proxy_note">All TCP traffic of this profile goes through the proxy. UDP (QUIC, calls) is blocked, and apps of this profile will not start if the proxy cannot be applied.</string>
 </resources>
