@@ -39,10 +39,12 @@ public class NativeCore {
     public static native boolean disableResourceLoading();
 
     /**
-     * Routes every outbound connection of this process through the proxy.
+     * Routes every outbound connection of this process through the proxy. With
+     * remoteDns, host names are resolved by the proxy instead of on the device.
      * Returns false when that could not be enforced.
      */
-    public static native boolean enableProxy(int type, String ip, int port, String user, String pass);
+    public static native boolean enableProxy(int type, String ip, int port, String user, String pass,
+                                             boolean remoteDns);
 
 
     @Keep

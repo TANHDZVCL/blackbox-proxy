@@ -9,6 +9,11 @@
             app:showAsAction="never" />
 
     <item
+        android:id="@+id/profile_list"
+        android:title="@string/profile_list"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/profile_proxy"
         android:title="@string/profile_proxy"
         app:showAsAction="never" />

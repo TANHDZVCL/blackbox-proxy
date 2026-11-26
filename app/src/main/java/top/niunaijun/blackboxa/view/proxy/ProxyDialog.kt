@@ -1,6 +1,7 @@
 package top.niunaijun.blackboxa.view.proxy
 
 import android.view.View
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.TextView
@@ -23,6 +24,7 @@ object ProxyDialog {
         val port = view.findViewById<EditText>(R.id.proxy_port)
         val user = view.findViewById<EditText>(R.id.proxy_user)
         val pass = view.findViewById<EditText>(R.id.proxy_pass)
+        val remoteDns = view.findViewById<CheckBox>(R.id.proxy_remote_dns)
         val status = view.findViewById<TextView>(R.id.proxy_status)
 
         status.setText(R.string.proxy_note)
@@ -38,6 +40,7 @@ object ProxyDialog {
             port.setText(current.port.toString())
             user.setText(current.user)
             pass.setText(current.pass)
+            remoteDns.isChecked = current.remoteDns
         } else {
             type.check(R.id.proxy_type_none)
         }
@@ -50,7 +53,7 @@ object ProxyDialog {
                 else -> return null
             }
             return ProfileProxy(kind, host.text.toString(), port.text.toString().toIntOrNull() ?: 0,
-                    user.text.toString(), pass.text.toString())
+                    user.text.toString(), pass.text.toString(), remoteDns.isChecked)
         }
 
         val dialog = MaterialAlertDialogBuilder(activity)

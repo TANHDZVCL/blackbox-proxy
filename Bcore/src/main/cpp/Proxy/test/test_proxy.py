@@ -164,6 +164,39 @@ while True:
 print('OK' if data.endswith(b'hello-from-origin') else 'BAD ' + repr(data))
 """
 
+# Resolves a name that does not exist anywhere, then connects to what it got.
+CLIENT_DNS = r"""
+import socket, sys
+try:
+    infos = socket.getaddrinfo(sys.argv[1], int(sys.argv[2]), type=socket.SOCK_STREAM)
+except socket.gaierror as e:
+    print('GAIERR'); sys.exit(0)
+fam, typ, proto, _, addr = infos[0]
+again = socket.getaddrinfo(sys.argv[1].upper(), int(sys.argv[2]), type=socket.SOCK_STREAM)[0][4]
+assert again == addr, 'same name must keep its address'
+s = socket.socket(fam, typ, proto)
+try:
+    s.connect(addr)
+except OSError as e:
+    print('ERR', e.errno); sys.exit(0)
+s.sendall(b'GET / HTTP/1.1\r\nHost: x\r\n\r\n')
+data = b''
+while True:
+    c = s.recv(4096)
+    if not c: break
+    data += c
+print('OK' if data.endswith(b'hello-from-origin') else 'BAD ' + repr(data))
+"""
+
+CLIENT_STRAY = r"""
+import socket
+s = socket.socket()
+try:
+    s.connect(('198.18.5.5', 443)); print('CONNECTED')
+except OSError as e:
+    print('ERR', e.errno)
+"""
+
 CLIENT_UDP = r"""
 import socket, sys, errno
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -193,8 +226,10 @@ except OSError as e:
 failures = 0
 
 
-def run(code, args, kind, port, auth=None):
+def run(code, args, kind, port, auth=None, remote_dns=False):
     env = dict(os.environ, LD_PRELOAD=SHIM, BB_PROXY_TYPE=str(kind), BB_PROXY_PORT=str(port))
+    if remote_dns:
+        env["BB_PROXY_REMOTE_DNS"] = "1"
     if auth:
         env["BB_PROXY_USER"], env["BB_PROXY_PASS"] = auth
     r = subprocess.run([sys.executable, "-c", code, *args], env=env, capture_output=True, text=True, timeout=60)
@@ -240,6 +275,19 @@ check("http wrong password fails closed", run(CLIENT_TCP, ["93.184.216.34", "443
 check("socks5 refused destination", run(CLIENT_TCP, ["93.184.216.34", "1", "blocking"], 1, SOCKS_PORT), "ERR 111")
 dead = socket.socket(); dead.bind(("127.0.0.1", 0)); dead_port = dead.getsockname()[1]; dead.close()
 check("proxy down fails closed", run(CLIENT_TCP, ["93.184.216.34", "443", "blocking"], 1, dead_port), "ERR 111")
+
+NAME = "no-such-host.blackbox-test.invalid"
+check("remote dns socks5 sends the name", run(CLIENT_DNS, [NAME, "443"], 1, SOCKS_PORT, remote_dns=True),
+      "OK", ("socks5", NAME, 443, False))
+check("remote dns http sends the name", run(CLIENT_DNS, [NAME, "443"], 2, HTTP_PORT, (USER, PASS), remote_dns=True),
+      "OK", ("http", NAME, 443, True))
+check("remote dns off resolves on the device", run(CLIENT_DNS, [NAME, "443"], 1, SOCKS_PORT), "GAIERR")
+n = len(seen)
+check("remote dns leaves localhost alone", run(CLIENT_TCP, ["localhost", str(ORIGIN_PORT), "blocking"], 1, SOCKS_PORT, remote_dns=True), "OK")
+check("  (proxy not contacted)", str(len(seen) - n), "0")
+check("remote dns numeric address unchanged", run(CLIENT_TCP, ["93.184.216.34", "8080", "blocking"], 1, SOCKS_PORT, remote_dns=True),
+      "OK", ("socks5", "93.184.216.34", 8080, False))
+check("unknown placeholder address is refused", run(CLIENT_STRAY, [], 1, SOCKS_PORT, remote_dns=True), "ERR 113")
 
 check("udp", run(CLIENT_UDP, [], 1, SOCKS_PORT), "connect=blocked sendto=blocked loopback=ok")
 check("tcp fast open", run(CLIENT_TFO, [], 1, SOCKS_PORT), "blocked 95")

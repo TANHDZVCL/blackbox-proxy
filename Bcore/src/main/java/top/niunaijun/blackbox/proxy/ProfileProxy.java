@@ -41,8 +41,11 @@ public class ProfileProxy {
     public final int port;
     public final String user;
     public final String pass;
+    /** Resolve host names at the proxy rather than with the device's DNS. */
+    public final boolean remoteDns;
 
-    public ProfileProxy(int type, String host, int port, String user, String pass) {
+    public ProfileProxy(int type, String host, int port, String user, String pass, boolean remoteDns) {
+        this.remoteDns = remoteDns;
         this.type = type;
         this.host = host == null ? "" : host.trim();
         this.port = port;
@@ -81,7 +84,8 @@ public class ProfileProxy {
             throw new IOException("Corrupt proxy configuration for profile " + userId, e);
         }
         ProfileProxy proxy = new ProfileProxy(type, props.getProperty("host"), port,
-                props.getProperty("user"), props.getProperty("pass"));
+                props.getProperty("user"), props.getProperty("pass"),
+                Boolean.parseBoolean(props.getProperty("remoteDns", "false")));
         if (!proxy.isValid()) {
             throw new IOException("Invalid proxy configuration for profile " + userId);
         }
@@ -106,6 +110,7 @@ public class ProfileProxy {
         props.setProperty("port", String.valueOf(proxy.port));
         props.setProperty("user", proxy.user);
         props.setProperty("pass", proxy.pass);
+        props.setProperty("remoteDns", String.valueOf(proxy.remoteDns));
         // Write-then-rename so a starting app never reads a half-written file.
         File tmp = new File(dir, file.getName() + ".tmp");
         try (FileOutputStream out = new FileOutputStream(tmp)) {
@@ -126,7 +131,7 @@ public class ProfileProxy {
             ProfileProxy proxy = load(userId);
             if (proxy == null) return;
             String ip = proxy.resolveIpv4();
-            if (NativeCore.enableProxy(proxy.type, ip, proxy.port, proxy.user, proxy.pass)) {
+            if (NativeCore.enableProxy(proxy.type, ip, proxy.port, proxy.user, proxy.pass, proxy.remoteDns)) {
                 Slog.d(TAG, "Profile " + userId + " uses " + proxy.summary());
                 return;
             }

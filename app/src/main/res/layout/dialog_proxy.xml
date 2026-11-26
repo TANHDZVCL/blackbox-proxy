@@ -79,6 +79,11 @@
                 android:importantForAutofill="no"
                 android:inputType="textPassword"
                 android:maxLines="1" />
+            <CheckBox
+                android:id="@+id/proxy_remote_dns"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/proxy_remote_dns" />
         </LinearLayout>
 
         <TextView

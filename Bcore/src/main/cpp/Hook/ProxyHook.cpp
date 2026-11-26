@@ -2,6 +2,8 @@
 
 #include <atomic>
 #include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
 #include <sys/un.h>
@@ -91,6 +93,60 @@ namespace {
         return gOrigSendmmsg(fd, msgs, count, flags);
     }
 
+    // Every resolver entry point in bionic (getaddrinfo, the Java resolver,
+    // the NDK network API) funnels into one of these two, depending on the
+    // Android version. Only the trailing arguments differ.
+    typedef int (*ResolveContextFn)(const char *, const char *, const addrinfo *, const void *,
+                                    addrinfo **);
+    typedef int (*ResolveNetFn)(const char *, const char *, const addrinfo *, unsigned, unsigned,
+                                addrinfo **);
+
+    ResolveContextFn gOrigResolveContext = nullptr;
+    ResolveNetFn gOrigResolveNet = nullptr;
+
+    struct NetArgs {
+        unsigned netId;
+        unsigned mark;
+    };
+
+    int nextResolveContext(const char *node, const char *service, const addrinfo *hints,
+                           addrinfo **res, void *context) {
+        return gOrigResolveContext(node, service, hints, context, res);
+    }
+
+    int nextResolveNet(const char *node, const char *service, const addrinfo *hints, addrinfo **res,
+                       void *context) {
+        NetArgs *args = (NetArgs *) context;
+        return gOrigResolveNet(node, service, hints, args->netId, args->mark, res);
+    }
+
+    int hookedResolveContext(const char *node, const char *service, const addrinfo *hints,
+                             const void *netContext, addrinfo **res) {
+        return ProxyCore::onResolve(node, service, hints, res, nextResolveContext,
+                                    (void *) netContext);
+    }
+
+    int hookedResolveNet(const char *node, const char *service, const addrinfo *hints,
+                         unsigned netId, unsigned mark, addrinfo **res) {
+        NetArgs args{netId, mark};
+        return ProxyCore::onResolve(node, service, hints, res, nextResolveNet, &args);
+    }
+
+    // Resolves a name that exists nowhere. It only succeeds, and only with a
+    // placeholder address, when the resolver hook is live.
+    bool resolveIsHooked() {
+        addrinfo hints{};
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        addrinfo *res = nullptr;
+        int saved = errno;
+        bool ok = getaddrinfo("hook-probe.blackbox.invalid", nullptr, &hints, &res) == 0 &&
+                  res != nullptr && ProxyCore::isPlaceholder(res->ai_addr);
+        if (res != nullptr) freeaddrinfo(res);
+        errno = saved;
+        return ok;
+    }
+
     // Both probes go through the public libc entry points, exactly like app
     // code does, and report whether our replacement was reached.
     bool connectIsHooked() {
@@ -148,6 +204,19 @@ namespace {
         return true;
     }
 
+    bool installResolveHook() {
+        void *libc = xdl_open("libc.so", XDL_DEFAULT);
+        if (libc == nullptr) return false;
+        if (!inlineHook(libc, "android_getaddrinfofornetcontext", hookedResolveContext,
+                        &gOrigResolveContext)) {
+            inlineHook(libc, "android_getaddrinfofornet", hookedResolveNet, &gOrigResolveNet);
+        }
+        xdl_close(libc);
+        bool ok = resolveIsHooked();
+        ALOGD("ProxyHook: resolve=%d", ok);
+        return ok;
+    }
+
     bool installed = false;
 
     bool install() {
@@ -192,10 +261,19 @@ namespace {
     }
 }
 
-bool ProxyHook::enable(int type, const char *ip, int port, const char *user, const char *pass) {
+bool ProxyHook::enable(int type, const char *ip, int port, const char *user, const char *pass,
+                       bool remoteDns) {
     if (!ProxyCore::configure(type, ip, port, user, pass)) {
         ALOGE("ProxyHook: invalid proxy configuration");
         return false;
     }
-    return install();
+    if (!install()) return false;
+    if (remoteDns) {
+        ProxyCore::setRemoteDns(true);
+        if (!installResolveHook()) {
+            ALOGE("ProxyHook: resolver hook unavailable, cannot resolve through the proxy");
+            return false;
+        }
+    }
+    return true;
 }

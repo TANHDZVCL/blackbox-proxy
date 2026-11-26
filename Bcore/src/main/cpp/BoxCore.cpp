@@ -133,11 +133,11 @@ bool disableResourceLoading(JNIEnv *env, jclass clazz) {
 }
 
 jboolean enableProxy(JNIEnv *env, jclass clazz, jint type, jstring ip, jint port, jstring user,
-                     jstring pass) {
+                     jstring pass, jboolean remoteDns) {
     const char *ipC = ip ? env->GetStringUTFChars(ip, nullptr) : nullptr;
     const char *userC = user ? env->GetStringUTFChars(user, nullptr) : nullptr;
     const char *passC = pass ? env->GetStringUTFChars(pass, nullptr) : nullptr;
-    bool ok = ProxyHook::enable(type, ipC, port, userC, passC);
+    bool ok = ProxyHook::enable(type, ipC, port, userC, passC, remoteDns == JNI_TRUE);
     if (ipC) env->ReleaseStringUTFChars(ip, ipC);
     if (userC) env->ReleaseStringUTFChars(user, userC);
     if (passC) env->ReleaseStringUTFChars(pass, passC);
@@ -145,7 +145,7 @@ jboolean enableProxy(JNIEnv *env, jclass clazz, jint type, jstring ip, jint port
 }
 
 static JNINativeMethod gMethods[] = {
-        {"enableProxy", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;)Z", (void *) enableProxy},
+        {"enableProxy", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Z)Z", (void *) enableProxy},
         {"disableHiddenApi", "()Z",                               (void *) disableHiddenApi},
         {"disableResourceLoading", "()Z",                         (void *) disableResourceLoading},
         {"hideXposed", "()V",                                     (void *) hideXposed},

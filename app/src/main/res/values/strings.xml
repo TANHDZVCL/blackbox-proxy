@@ -102,4 +102,9 @@
     <string name="shortcut_try_other">Thử cách khác</string>
     <string name="shortcut_legacy_sent">Đã gửi yêu cầu theo cách khác. Hãy kiểm tra màn hình chính.</string>
     <string name="shortcut_legacy_none">Màn hình chính của máy này không hỗ trợ cách tạo lối tắt khác.</string>
+    <string name="proxy_remote_dns">Phân giải tên miền qua proxy (DNS qua proxy). Nếu app trong profile không mở được hoặc không vào mạng, hãy bỏ chọn.</string>
+    <string name="profile_list">Danh sách profile</string>
+    <string name="profile_list_new">+ Profile mới</string>
+    <string name="profile_list_direct">mạng trực tiếp</string>
+    <string name="profile_list_apps">%d ứng dụng</string>
 </resources>

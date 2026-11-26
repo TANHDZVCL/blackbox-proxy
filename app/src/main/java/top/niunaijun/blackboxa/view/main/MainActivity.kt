@@ -356,6 +356,38 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    // One line per profile: name, proxy and number of apps. Tapping a line
+    // jumps to that profile's page.
+    private fun showProfileList() {
+        // Read the id from the arguments: a page that was never shown has not
+        // run onCreate yet, so its userID field is still unset.
+        val pages = fragmentList.map { it.arguments?.getInt("userID") ?: 0 }
+        val labels = pages.mapIndexed { index, userId ->
+            if (index == pages.lastIndex) {
+                getString(R.string.profile_list_new)
+            } else {
+                val proxy = try {
+                    ProfileProxy.load(userId)?.summary() ?: getString(R.string.profile_list_direct)
+                } catch (e: Exception) {
+                    "proxy: ${e.message}"
+                }
+                val apps = try {
+                    BlackBoxCore.get().getInstalledApplications(0, userId)?.size ?: 0
+                } catch (e: Exception) {
+                    0
+                }
+                "${profileName(userId)}\n$proxy · ${getString(R.string.profile_list_apps, apps)}"
+            }
+        }
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.profile_list)
+                .setItems(labels.toTypedArray()) { _, which ->
+                    viewBinding.viewPager.setCurrentItem(which, false)
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+    }
+
     private fun profileName(userId: Int): String {
         val remark = AppManager.mRemarkSharedPreferences.getString("Remark$userId", null)
         return if (remark.isNullOrEmpty()) "User $userId" else remark
@@ -425,6 +457,7 @@ class MainActivity : LoadingActivity() {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/newblackboxa"))
                     startActivity(intent)
                 }
+                R.id.profile_list -> showProfileList()
                 R.id.profile_proxy -> {
                     val profile = currentUser
                     ProxyDialog.show(this, profile, profileName(profile)) {

@@ -1,6 +1,7 @@
 #ifndef BLACKBOX_PROXYCORE_H
 #define BLACKBOX_PROXYCORE_H
 
+#include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
@@ -20,9 +21,25 @@ namespace ProxyCore {
     typedef int (*ConnectFn)(int, const struct sockaddr *, socklen_t);
     typedef int (*SocketFn)(int, int, int);
 
+    typedef int (*ResolveFn)(const char *node, const char *service, const struct addrinfo *hints,
+                             struct addrinfo **res, void *context);
+
     // `ip` must be a numeric IPv4 address. Returns false on invalid input, in
     // which case the proxy stays disabled.
     bool configure(int type, const char *ip, int port, const char *user, const char *pass);
+
+    // When on, host names are not looked up on the device. onResolve() hands
+    // out a placeholder address per name, and onConnect() asks the proxy to
+    // connect to the name itself.
+    void setRemoteDns(bool on);
+
+    // Replacement for getaddrinfo(3). `next` is the real resolver; `context`
+    // is passed through to it untouched.
+    int onResolve(const char *node, const char *service, const struct addrinfo *hints,
+                  struct addrinfo **res, ResolveFn next, void *context);
+
+    // True when `addr` is a placeholder handed out by onResolve().
+    bool isPlaceholder(const struct sockaddr *addr);
 
     bool enabled();
 

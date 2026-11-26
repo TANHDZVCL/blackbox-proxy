@@ -1,6 +1,8 @@
 // Host-side harness: exposes ProxyCore through LD_PRELOAD so ordinary Linux
 // programs exercise the same code path the Android hooks use.
+#include <dlfcn.h>
 #include <errno.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
@@ -22,9 +24,21 @@ __attribute__((constructor)) static void setup() {
     if (type == nullptr || port == nullptr) return;
     ProxyCore::configure(atoi(type), "127.0.0.1", atoi(port), getenv("BB_PROXY_USER"),
                          getenv("BB_PROXY_PASS"));
+    ProxyCore::setRemoteDns(getenv("BB_PROXY_REMOTE_DNS") != nullptr);
+}
+
+static int realResolve(const char *node, const char *service, const addrinfo *hints, addrinfo **res,
+                       void *) {
+    typedef int (*Fn)(const char *, const char *, const addrinfo *, addrinfo **);
+    static Fn real = (Fn) dlsym(RTLD_NEXT, "getaddrinfo");
+    return real(node, service, hints, res);
 }
 
 extern "C" {
+
+int getaddrinfo(const char *node, const char *service, const addrinfo *hints, addrinfo **res) {
+    return ProxyCore::onResolve(node, service, hints, res, realResolve, nullptr);
+}
 
 int connect(int fd, const sockaddr *addr, socklen_t len) {
     return ProxyCore::onConnect(fd, addr, len, rawConnect);
