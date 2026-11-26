@@ -99,4 +99,7 @@
     <string name="app_list_empty_title">Không tìm thấy ứng dụng nào</string>
     <string name="app_list_empty_message">BlackBox không thấy ứng dụng nào đã cài trên máy. Trên nhiều dòng máy, bạn phải cho phép nó đọc danh sách ứng dụng đã cài: mở cài đặt ứng dụng, vào Quyền, rồi cho phép \"Đọc danh sách ứng dụng đã cài\" (tên quyền khác nhau tùy hãng).\n\nBạn cũng có thể bấm \"Chọn tệp\" ở phía trên để chọn một file APK.</string>
     <string name="open_app_settings">Mở cài đặt</string>
+    <string name="shortcut_try_other">Thử cách khác</string>
+    <string name="shortcut_legacy_sent">Đã gửi yêu cầu theo cách khác. Hãy kiểm tra màn hình chính.</string>
+    <string name="shortcut_legacy_none">Màn hình chính của máy này không hỗ trợ cách tạo lối tắt khác.</string>
 </resources>

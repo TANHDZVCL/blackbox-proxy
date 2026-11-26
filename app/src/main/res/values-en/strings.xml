@@ -99,4 +99,7 @@
     <string name="app_list_empty_title">No apps found</string>
     <string name="app_list_empty_message">BlackBox could not see any app installed on this phone. On many phones you have to allow it to read the list of installed apps: open the app settings, then Permissions, and allow \"Read installed apps\" (the name differs between brands).\n\nYou can also tap \"Choose\" at the top to pick an APK file instead.</string>
     <string name="open_app_settings">Open settings</string>
+    <string name="shortcut_try_other">Try another way</string>
+    <string name="shortcut_legacy_sent">Sent the request another way. Check your home screen.</string>
+    <string name="shortcut_legacy_none">The home screen on this phone does not support the other way of adding shortcuts.</string>
 </resources>
