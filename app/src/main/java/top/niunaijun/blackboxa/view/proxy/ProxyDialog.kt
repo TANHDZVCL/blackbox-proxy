@@ -27,7 +27,15 @@ object ProxyDialog {
         val remoteDns = view.findViewById<CheckBox>(R.id.proxy_remote_dns)
         val status = view.findViewById<TextView>(R.id.proxy_status)
 
-        status.setText(R.string.proxy_note)
+        // The note, followed by what the profile's apps reported when they
+        // last started. That is the only window into a failed start.
+        val starts = ProfileProxy.lastStarts(userId)
+        status.text = if (starts.isEmpty()) {
+            activity.getString(R.string.proxy_note)
+        } else {
+            activity.getString(R.string.proxy_note) + "\n\n" +
+                    activity.getString(R.string.proxy_last_starts) + "\n" + starts
+        }
         val current = try {
             ProfileProxy.load(userId)
         } catch (e: Exception) {

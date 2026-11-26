@@ -41,10 +41,17 @@ public class NativeCore {
     /**
      * Routes every outbound connection of this process through the proxy. With
      * remoteDns, host names are resolved by the proxy instead of on the device.
-     * Returns false when that could not be enforced.
+     * Returns 0 on success, otherwise the PROXY_* flags of what failed.
      */
-    public static native boolean enableProxy(int type, String ip, int port, String user, String pass,
-                                             boolean remoteDns);
+    public static native int enableProxy(int type, String ip, int port, String user, String pass,
+                                         boolean remoteDns);
+
+    public static final int PROXY_BAD_CONFIG = 1;
+    public static final int PROXY_NO_CONNECT_HOOK = 2;
+    public static final int PROXY_NO_SOCKET_HOOK = 4;
+    public static final int PROXY_NO_RESOLVE_HOOK = 8;
+    /** Informational: TCP Fast Open sends are not covered. Not a failure on its own. */
+    public static final int PROXY_NO_SEND_HOOK = 16;
 
 
     @Keep

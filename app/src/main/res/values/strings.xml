@@ -107,4 +107,5 @@
     <string name="profile_list_new">+ Profile mới</string>
     <string name="profile_list_direct">mạng trực tiếp</string>
     <string name="profile_list_apps">%d ứng dụng</string>
+    <string name="proxy_last_starts">Các lần khởi động gần nhất:</string>
 </resources>

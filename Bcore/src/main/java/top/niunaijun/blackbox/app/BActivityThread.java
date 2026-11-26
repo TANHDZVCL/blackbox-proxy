@@ -403,7 +403,7 @@ public class BActivityThread extends IBActivityThread.Stub {
         NativeCore.init(Build.VERSION.SDK_INT);
         // Before any app code runs, and before file redirection hides the
         // host's own configuration files from this process.
-        ProfileProxy.enforceForCurrentProcess(getUserId());
+        ProfileProxy.enforceForCurrentProcess(getUserId(), processName);
         assert packageContext != null;
         IOCore.get().enableRedirect(packageContext);
 

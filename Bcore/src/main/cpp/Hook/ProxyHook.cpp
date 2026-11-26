@@ -217,10 +217,10 @@ namespace {
         return ok;
     }
 
-    bool installed = false;
+    int installResult = -1;
 
-    bool install() {
-        if (installed) return true;
+    int install() {
+        if (installResult >= 0) return installResult;
 
         registerWithNetdClient();
         bool connectOk = connectIsHooked();
@@ -229,7 +229,7 @@ namespace {
         void *libc = xdl_open("libc.so", XDL_DEFAULT);
         if (libc == nullptr) {
             ALOGE("ProxyHook: cannot open libc.so");
-            return false;
+            return ProxyHook::NO_CONNECT_HOOK | ProxyHook::NO_SOCKET_HOOK;
         }
 
         if (!connectOk) {
@@ -256,24 +256,27 @@ namespace {
         if (!sendOk) {
             ALOGE("ProxyHook: send hooks unavailable, TCP Fast Open is not covered");
         }
-        installed = connectOk && socketOk;
-        return installed;
+        installResult = (connectOk ? 0 : ProxyHook::NO_CONNECT_HOOK) |
+                        (socketOk ? 0 : ProxyHook::NO_SOCKET_HOOK) |
+                        (sendOk ? 0 : ProxyHook::NO_SEND_HOOK);
+        return installResult;
     }
 }
 
-bool ProxyHook::enable(int type, const char *ip, int port, const char *user, const char *pass,
-                       bool remoteDns) {
+int ProxyHook::enable(int type, const char *ip, int port, const char *user, const char *pass,
+                      bool remoteDns) {
     if (!ProxyCore::configure(type, ip, port, user, pass)) {
         ALOGE("ProxyHook: invalid proxy configuration");
-        return false;
+        return BAD_CONFIG;
     }
-    if (!install()) return false;
+    int result = install();
+    if (result & (NO_CONNECT_HOOK | NO_SOCKET_HOOK)) return result;
     if (remoteDns) {
         ProxyCore::setRemoteDns(true);
         if (!installResolveHook()) {
             ALOGE("ProxyHook: resolver hook unavailable, cannot resolve through the proxy");
-            return false;
+            result |= NO_RESOLVE_HOOK;
         }
     }
-    return true;
+    return result;
 }

@@ -123,25 +123,84 @@ public class ProfileProxy {
     /**
      * Called in a virtual app process before any app code runs. If the profile
      * has a proxy that cannot be enforced, the process is killed: an app must
-     * never fall back to the device's real address unnoticed.
+     * never fall back to the device's real address unnoticed. Either way the
+     * outcome is recorded for {@link #lastStarts(int)}.
      */
-    public static void enforceForCurrentProcess(int userId) {
+    public static void enforceForCurrentProcess(int userId, String processName) {
         String failure;
         try {
             ProfileProxy proxy = load(userId);
             if (proxy == null) return;
             String ip = proxy.resolveIpv4();
-            if (NativeCore.enableProxy(proxy.type, ip, proxy.port, proxy.user, proxy.pass, proxy.remoteDns)) {
-                Slog.d(TAG, "Profile " + userId + " uses " + proxy.summary());
+            int result = NativeCore.enableProxy(proxy.type, ip, proxy.port, proxy.user, proxy.pass,
+                    proxy.remoteDns);
+            if ((result & ~NativeCore.PROXY_NO_SEND_HOOK) == 0) {
+                String note = "OK " + proxy.summary() + (proxy.remoteDns ? ", DNS via proxy" : "")
+                        + (result != 0 ? ", no send hook" : "");
+                Slog.d(TAG, "Profile " + userId + ": " + note);
+                recordStart(userId, processName, note);
                 return;
             }
-            failure = "network hooks could not be installed";
+            failure = describe(result);
         } catch (Throwable e) {
             failure = String.valueOf(e);
         }
         Slog.e(TAG, "Refusing to start: proxy of profile " + userId + " cannot be enforced: " + failure);
+        recordStart(userId, processName, "BLOCKED: " + failure);
         Process.killProcess(Process.myPid());
         System.exit(10);
+    }
+
+    private static String describe(int result) {
+        StringBuilder text = new StringBuilder();
+        if ((result & NativeCore.PROXY_BAD_CONFIG) != 0) text.append("bad configuration; ");
+        if ((result & NativeCore.PROXY_NO_CONNECT_HOOK) != 0) text.append("connect hook failed; ");
+        if ((result & NativeCore.PROXY_NO_SOCKET_HOOK) != 0) text.append("socket hook failed; ");
+        if ((result & NativeCore.PROXY_NO_RESOLVE_HOOK) != 0) text.append("DNS hook failed (turn off DNS via proxy); ");
+        return text.toString().trim();
+    }
+
+    private static final int STARTS_KEPT = 8;
+
+    private static File startsFile(int userId) {
+        return new File(new File(BEnvironment.getSystemDir(), "proxy"), userId + ".starts");
+    }
+
+    // Best effort: diagnostics must never get in the way of starting an app.
+    private static void recordStart(int userId, String processName, String note) {
+        try {
+            java.util.List<String> lines = new java.util.ArrayList<>(lastStartLines(userId));
+            String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date());
+            lines.add(time + " " + processName + ": " + note);
+            while (lines.size() > STARTS_KEPT) lines.remove(0);
+            try (FileOutputStream out = new FileOutputStream(startsFile(userId))) {
+                out.write(utf8(android.text.TextUtils.join("\n", lines)));
+            }
+        } catch (Throwable e) {
+            Slog.w(TAG, "Cannot record proxy start: " + e);
+        }
+    }
+
+    private static java.util.List<String> lastStartLines(int userId) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        File file = startsFile(userId);
+        if (!file.exists()) return lines;
+        try (InputStream in = new FileInputStream(file)) {
+            for (String line : new String(readToEnd(in), StandardCharsets.UTF_8).split("\n")) {
+                if (!line.isEmpty()) lines.add(line);
+            }
+        } catch (IOException e) {
+            lines.add("cannot read start log: " + e.getMessage());
+        }
+        return lines;
+    }
+
+    /**
+     * What happened the last few times an app process of this profile started
+     * with a proxy configured, oldest first. Empty when none did.
+     */
+    public static String lastStarts(int userId) {
+        return android.text.TextUtils.join("\n", lastStartLines(userId));
     }
 
     private String resolveIpv4() throws IOException {
