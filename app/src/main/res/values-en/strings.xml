@@ -112,4 +112,8 @@
     <string name="logs_save_failed">Could not save the log: %s</string>
     <string name="logs_saved_private">Log saved. Tap \"Share log\" to send the file with another app.\n\nIt may contain app names and proxy addresses (no passwords). Only share it with people you trust.</string>
     <string name="logs_share">Share log</string>
+    <string name="switcher_title">Switch running profile</string>
+    <string name="switcher_hint">Tap to switch between running apps</string>
+    <string name="switcher_home">BlackBox home</string>
+    <string name="switcher_entry">%1$s · %2$s</string>
 </resources>

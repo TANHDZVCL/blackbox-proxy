@@ -9,6 +9,11 @@
             app:showAsAction="never" />
 
     <item
+        android:id="@+id/profile_switcher"
+        android:title="@string/switcher_title"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/profile_list"
         android:title="@string/profile_list"
         app:showAsAction="never" />

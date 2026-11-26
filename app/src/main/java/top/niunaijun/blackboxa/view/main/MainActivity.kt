@@ -27,6 +27,7 @@ import top.niunaijun.blackboxa.view.fake.FakeManagerActivity
 import top.niunaijun.blackboxa.view.list.ListActivity
 import top.niunaijun.blackboxa.view.proxy.ProxyDialog
 import top.niunaijun.blackboxa.view.setting.SettingActivity
+import top.niunaijun.blackboxa.view.switcher.SwitcherActivity
 
 class MainActivity : LoadingActivity() {
 
@@ -70,6 +71,8 @@ class MainActivity : LoadingActivity() {
 
             
             checkVpnPermission()
+
+            SwitcherActivity.showNotification(this)
 
             try {
                 BlackBoxCore.get().onAfterMainActivityOnCreate(this)
@@ -457,6 +460,7 @@ class MainActivity : LoadingActivity() {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/newblackboxa"))
                     startActivity(intent)
                 }
+                R.id.profile_switcher -> startActivity(Intent(this, SwitcherActivity::class.java))
                 R.id.profile_list -> showProfileList()
                 R.id.profile_proxy -> {
                     val profile = currentUser

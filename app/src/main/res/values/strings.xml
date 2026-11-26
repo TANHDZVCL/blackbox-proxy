@@ -112,4 +112,8 @@
     <string name="logs_save_failed">Không lưu được nhật ký: %s</string>
     <string name="logs_saved_private">Đã lưu nhật ký. Bấm \"Chia sẻ nhật ký\" để gửi file qua app khác.\n\nFile có thể chứa tên app và địa chỉ proxy (không có mật khẩu). Chỉ gửi cho người bạn tin.</string>
     <string name="logs_share">Chia sẻ nhật ký</string>
+    <string name="switcher_title">Chuyển profile đang chạy</string>
+    <string name="switcher_hint">Chạm để chuyển giữa các app đang chạy</string>
+    <string name="switcher_home">Màn hình chính BlackBox</string>
+    <string name="switcher_entry">%1$s · %2$s</string>
 </resources>

@@ -44,6 +44,15 @@
         </activity>
         <activity android:name=".view.list.ListActivity" />
 
+        <!-- Its own task, so opening it never drags another window along. -->
+        <activity
+            android:name=".view.switcher.SwitcherActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity="top.niunaijun.blackbox.switcher"
+            android:theme="@style/SwitcherTheme" />
+
         <!-- Lets the user hand a saved log file to another app (chat, mail). -->
         <provider
             android:name="androidx.core.content.FileProvider"
