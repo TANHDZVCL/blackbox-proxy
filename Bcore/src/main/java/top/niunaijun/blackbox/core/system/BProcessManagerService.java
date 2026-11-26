@@ -189,14 +189,25 @@ public class BProcessManagerService implements ISystemService {
         app.initLock.open();
     }
 
+    private static int processMapKey(ProcessRecord record) {
+        return BUserHandle.getUid(record.userId, record.buid);
+    }
+
     public void onProcessDie(ProcessRecord record) {
         synchronized (mProcessLock) {
             record.kill();
-            Map<String, ProcessRecord> process = mProcessMap.get(record.buid);
+            // The map is keyed by user and app. record.buid holds the app id
+            // alone, which is also the key of user 0: looking it up directly
+            // dropped user 0's live process whenever a process of another
+            // profile died, and left the dead one registered.
+            int key = processMapKey(record);
+            Map<String, ProcessRecord> process = mProcessMap.get(key);
             if (process != null) {
-                process.remove(record.processName);
+                if (process.get(record.processName) == record) {
+                    process.remove(record.processName);
+                }
                 if (process.isEmpty()) {
-                    mProcessMap.remove(record.buid);
+                    mProcessMap.remove(key);
                 }
             }
             mPidsSelfLocked.remove(record);
@@ -225,7 +236,7 @@ public class BProcessManagerService implements ISystemService {
                 for (ProcessRecord processRecord : mPidsSelfLocked) {
                     int appId1 = BUserHandle.getAppId(processRecord.buid);
                     if (appId == appId1) {
-                        mProcessMap.remove(processRecord.buid);
+                        mProcessMap.remove(processMapKey(processRecord));
                         tmp.remove(processRecord);
                         processRecord.kill();
                     }

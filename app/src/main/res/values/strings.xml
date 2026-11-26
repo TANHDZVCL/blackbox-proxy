@@ -93,8 +93,8 @@
     <string name="error">Lỗi</string>
     <string name="ok">OK</string>
     <string name="unknown_app">Ứng dụng không rõ</string>
-    <string name="send_logs">Gửi nhật ký</string>
-    <string name="send_logs_summary">Gửi nhật ký gỡ lỗi cho nhà phát triển</string>
+    <string name="send_logs">Lưu nhật ký</string>
+    <string name="send_logs_summary">Lưu nhật ký gỡ lỗi vào thư mục Tải xuống của máy. Không gửi đi đâu cả.</string>
     <string name="sending_logs">Đang gửi nhật ký... (xem trạng thái ở thông báo)</string>
     <string name="app_list_empty_title">Không tìm thấy ứng dụng nào</string>
     <string name="app_list_empty_message">BlackBox không thấy ứng dụng nào đã cài trên máy. Trên nhiều dòng máy, bạn phải cho phép nó đọc danh sách ứng dụng đã cài: mở cài đặt ứng dụng, vào Quyền, rồi cho phép \"Đọc danh sách ứng dụng đã cài\" (tên quyền khác nhau tùy hãng).\n\nBạn cũng có thể bấm \"Chọn tệp\" ở phía trên để chọn một file APK.</string>
@@ -108,4 +108,6 @@
     <string name="profile_list_direct">mạng trực tiếp</string>
     <string name="profile_list_apps">%d ứng dụng</string>
     <string name="proxy_last_starts">Các lần khởi động gần nhất:</string>
+    <string name="logs_saved">Đã lưu nhật ký vào:\n%s\n\nFile này có thể chứa tên app và địa chỉ proxy (không có mật khẩu). Chỉ gửi cho người bạn tin.</string>
+    <string name="logs_save_failed">Không lưu được nhật ký: %s</string>
 </resources>

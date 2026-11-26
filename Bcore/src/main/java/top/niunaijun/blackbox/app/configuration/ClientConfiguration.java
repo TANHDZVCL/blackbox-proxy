@@ -36,7 +36,10 @@ public abstract class ClientConfiguration {
     }
 
     
+    // Empty disables log upload. The upstream default sent the device's
+    // logcat to the engine author's channel, on demand and automatically when
+    // a crash was detected.
     public String getLogSenderChatId() {
-        return "-1003719573856";
+        return "";
     }
 }
