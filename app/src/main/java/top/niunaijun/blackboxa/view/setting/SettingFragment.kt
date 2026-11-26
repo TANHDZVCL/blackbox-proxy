@@ -104,7 +104,7 @@ class SettingFragment : PreferenceFragmentCompat() {
                                 }
                             }
                     )
-            toast("Sending logs... (Check notifications for status)")
+            toast(R.string.sending_logs)
             true
         }
     }

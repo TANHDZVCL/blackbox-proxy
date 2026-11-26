@@ -89,7 +89,13 @@ class AppsRepository {
                     try {
                         val file = File(installedApplication.sourceDir)
 
-                        if ((installedApplication.flags and ApplicationInfo.FLAG_SYSTEM) != 0)
+                        // Skip the system's own apps, but keep preinstalled ones the
+                        // user updates from the store (Facebook ships that way on
+                        // many phones).
+                        val flags = installedApplication.flags
+                        if ((flags and ApplicationInfo.FLAG_SYSTEM) != 0 &&
+                                        (flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
+                        )
                                 continue
 
                         if (!AbiUtils.isSupport(file)) continue
@@ -138,6 +144,12 @@ class AppsRepository {
     ) {
         try {
             loadingLiveData.postValue(true)
+            // The list is first scanned at launch. If that scan saw nothing (for
+            // example the phone had not yet allowed reading the app list), scan
+            // again instead of serving the empty result forever.
+            if (synchronized(mInstalledList) { mInstalledList.isEmpty() }) {
+                previewInstallList()
+            }
             synchronized(mInstalledList) {
                 val blackBoxCore = BlackBoxCore.get()
                 Log.d(TAG, mInstalledList.joinToString(","))

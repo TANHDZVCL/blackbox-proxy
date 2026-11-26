@@ -140,7 +140,7 @@ class AppsAdapter : RVHolderFactory() {
         private fun setSafeDefaults() {
             try {
                 binding.icon.setImageDrawable(createDefaultIcon())
-                binding.name.text = "Unknown App"
+                binding.name.setText(R.string.unknown_app)
                 binding.cornerLabel.visibility = View.INVISIBLE
             } catch (e: Exception) {
                 Log.e(TAG, "Error setting safe defaults: ${e.message}")

@@ -3,15 +3,22 @@ package top.niunaijun.blackboxa.view.list
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import cbfg.rvadapter.RVAdapter
 import com.ferfalk.simplesearchview.SimpleSearchView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.bean.InstalledAppBean
 import top.niunaijun.blackboxa.databinding.ActivityListBinding
@@ -28,6 +35,10 @@ class ListActivity : BaseActivity() {
     private lateinit var viewModel: ListViewModel
 
     private var appList: List<InstalledAppBean> = ArrayList()
+
+    private var askedAppListPermission = false
+
+    private var shownEmptyHint = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,10 +80,13 @@ class ListActivity : BaseActivity() {
         viewModel =
                 ViewModelProvider(this, InjectionUtil.getListFactory())
                         .get(ListViewModel::class.java)
-        val userID = intent.getIntExtra("userID", 0)
-        viewModel.getInstallAppList(userID)
         viewBinding.toolbarLayout.toolbar.setTitle(R.string.installed_app)
+    }
 
+    // Observers are dropped in onStop, so (re)attach and reload on every start.
+    // That also picks up a permission granted in system settings meanwhile.
+    override fun onStart() {
+        super.onStart()
         viewModel.loadingLiveData.observe(this) {
             if (it) {
                 viewBinding.stateView.showLoading()
@@ -91,9 +105,69 @@ class ListActivity : BaseActivity() {
                     viewModel.previewInstalledList()
                 } else {
                     viewBinding.stateView.showEmpty()
+                    onEmptyList()
                 }
             }
         }
+        loadApps()
+    }
+
+    private fun loadApps() {
+        viewModel.getInstallAppList(intent.getIntExtra("userID", 0))
+    }
+
+    // Every phone has user apps, so an empty list means we are not allowed to
+    // see them. Ask for the vendor permission where it exists, otherwise send
+    // the user to the app's settings. Each is offered once per screen.
+    private fun onEmptyList() {
+        if (!askedAppListPermission && appListPermissionExists() &&
+                        ContextCompat.checkSelfPermission(this, PERMISSION_APP_LIST) !=
+                                PackageManager.PERMISSION_GRANTED
+        ) {
+            askedAppListPermission = true
+            ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(PERMISSION_APP_LIST),
+                    REQUEST_APP_LIST
+            )
+            return
+        }
+        if (shownEmptyHint) return
+        shownEmptyHint = true
+        MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.app_list_empty_title)
+                .setMessage(R.string.app_list_empty_message)
+                .setPositiveButton(R.string.open_app_settings) { _, _ ->
+                    try {
+                        startActivity(
+                                Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:$packageName")
+                                )
+                        )
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Cannot open app settings: ${e.message}")
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+    }
+
+    private fun appListPermissionExists(): Boolean {
+        return try {
+            packageManager.getPermissionInfo(PERMISSION_APP_LIST, 0) != null
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_APP_LIST) loadApps()
     }
 
     private fun filterApp(newText: String) {
@@ -149,6 +223,10 @@ class ListActivity : BaseActivity() {
     }
 
     companion object {
+        private const val TAG = "ListActivity"
+        private const val PERMISSION_APP_LIST = "com.android.permission.GET_INSTALLED_APPS"
+        private const val REQUEST_APP_LIST = 2001
+
         fun start(context: Context) {
             val intent = Intent(context, ListActivity::class.java)
             context.startActivity(intent)
