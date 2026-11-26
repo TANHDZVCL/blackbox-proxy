@@ -26,6 +26,9 @@ import top.niunaijun.blackbox.utils.TrieTree;
 @SuppressLint("SdCardPath")
 public class IOCore {
     public static final String TAG = "IOCore";
+    private static final String[] SHARED_MEDIA_DIRS = {
+            "DCIM", "Pictures", "Movies", "Music", "Download", "Documents"
+    };
 
     private static final IOCore sIOCore = new IOCore();
     private static final TrieTree mTrieTree = new TrieTree();
@@ -64,9 +67,11 @@ public class IOCore {
         if (path.contains("/blackbox/")) {
             return path;
         }
-        String search = sBlackTree.search(path);
-        if (!TextUtils.isEmpty(search))
-            return search;
+        // Excluded from redirection: the path is used as it is. (This used to
+        // return the matched prefix, which turned every file under an excluded
+        // directory into the directory itself.)
+        if (!TextUtils.isEmpty(sBlackTree.search(path)))
+            return path;
 
         
         String key = mTrieTree.search(path);
@@ -138,8 +143,14 @@ public class IOCore {
                 rule.put("/sdcard", external.getAbsolutePath());
                 rule.put(String.format("/storage/emulated/%d", systemUserId), external.getAbsolutePath());
 
-                blackRule.add("/sdcard/Pictures");
-                blackRule.add(String.format("/storage/emulated/%d/Pictures", systemUserId));
+                // The shared media folders stay the real ones. The gallery
+                // hands apps real paths under them, so redirecting those to
+                // the profile's private storage makes every picked photo or
+                // video unreadable.
+                for (String shared : SHARED_MEDIA_DIRS) {
+                    blackRule.add("/sdcard/" + shared);
+                    blackRule.add(String.format("/storage/emulated/%d/%s", systemUserId, shared));
+                }
             }
             if (BlackBoxCore.get().isHideRoot()) {
                 hideRoot(rule);
