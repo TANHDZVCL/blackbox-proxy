@@ -94,7 +94,7 @@
     <string name="ok">OK</string>
     <string name="unknown_app">Unknown App</string>
     <string name="send_logs">Save logs</string>
-    <string name="send_logs_summary">Save debug logs to the Download folder. Nothing is uploaded.</string>
+    <string name="send_logs_summary">Save debug logs on the device and share them if you want. Nothing is sent automatically.</string>
     <string name="sending_logs">Sending logs... (Check notifications for status)</string>
     <string name="app_list_empty_title">No apps found</string>
     <string name="app_list_empty_message">BlackBox could not see any app installed on this phone. On many phones you have to allow it to read the list of installed apps: open the app settings, then Permissions, and allow \"Read installed apps\" (the name differs between brands).\n\nYou can also tap \"Choose\" at the top to pick an APK file instead.</string>
@@ -108,6 +108,8 @@
     <string name="profile_list_direct">direct connection</string>
     <string name="profile_list_apps">%d apps</string>
     <string name="proxy_last_starts">Latest starts:</string>
-    <string name="logs_saved">Log saved to:\n%s\n\nIt may contain app names and proxy addresses (no passwords). Only share it with people you trust.</string>
+    <string name="logs_saved">Log saved. Tap \"Share log\" to send the file with another app.\n\nA copy is at:\n%s\n\nIt may contain app names and proxy addresses (no passwords). Only share it with people you trust.</string>
     <string name="logs_save_failed">Could not save the log: %s</string>
+    <string name="logs_saved_private">Log saved. Tap \"Share log\" to send the file with another app.\n\nIt may contain app names and proxy addresses (no passwords). Only share it with people you trust.</string>
+    <string name="logs_share">Share log</string>
 </resources>

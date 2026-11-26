@@ -1,7 +1,12 @@
 package top.niunaijun.blackboxa.view.setting
 
+import android.app.ActivityManager
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import androidx.core.content.FileProvider
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import top.niunaijun.blackbox.BlackBoxCore
@@ -93,38 +98,100 @@ class SettingFragment : PreferenceFragmentCompat() {
             return@setOnPreferenceChangeListener true
         }
     }
-    // Saves the app's own log to the Download folder instead of uploading it
-    // anywhere. All cloned apps run under BlackBox's identity, so this log
-    // covers them too.
+    // Saves the app's own log on the device instead of uploading it anywhere,
+    // and offers to share the file. All cloned apps run under BlackBox's
+    // identity, so this log covers them too.
     private fun initSendLogs() {
         val sendLogsPreference: Preference? = findPreference("send_logs")
         sendLogsPreference?.setOnPreferenceClickListener { preference ->
             preference.isEnabled = false
+            val context = requireContext().applicationContext
             thread(name = "SaveLogs") {
+                var saved: File? = null
                 val message = try {
-                    val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    val dir = File(context.cacheDir, "logs")
                     if (!dir.isDirectory && !dir.mkdirs()) throw IOException("cannot create $dir")
+                    dir.listFiles()?.forEach { it.delete() }
                     val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
                     val file = File(dir, "blackbox-log-$stamp.txt")
-                    val process = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-v", "threadtime", "-t", "30000"))
-                    file.outputStream().use { out -> process.inputStream.use { it.copyTo(out) } }
-                    process.waitFor()
-                    if (file.length() == 0L) throw IOException("log is empty")
-                    getString(R.string.logs_saved, file.absolutePath)
+                    file.outputStream().use { out ->
+                        out.write(describeState(context).toByteArray())
+                        val process = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-v", "threadtime", "-t", "30000"))
+                        process.inputStream.use { it.copyTo(out) }
+                        process.waitFor()
+                    }
+                    saved = file
+                    // A copy where a file manager can find it. Best effort:
+                    // sharing works from the private copy either way.
+                    val copy = try {
+                        val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        downloads.mkdirs()
+                        file.copyTo(File(downloads, file.name), overwrite = true).absolutePath
+                    } catch (e: Exception) {
+                        null
+                    }
+                    if (copy != null) getString(R.string.logs_saved, copy) else getString(R.string.logs_saved_private)
                 } catch (e: Exception) {
                     getString(R.string.logs_save_failed, e.message ?: e.javaClass.simpleName)
                 }
                 activity?.runOnUiThread {
                     preference.isEnabled = true
-                    activity?.let {
-                        com.google.android.material.dialog.MaterialAlertDialogBuilder(it)
-                                .setMessage(message)
-                                .setPositiveButton(R.string.ok, null)
-                                .show()
+                    val host = activity ?: return@runOnUiThread
+                    val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(host)
+                            .setMessage(message)
+                            .setNegativeButton(R.string.done, null)
+                    saved?.let { file ->
+                        dialog.setPositiveButton(R.string.logs_share) { _, _ -> shareLog(file) }
                     }
+                    dialog.show()
                 }
             }
             true
         }
+    }
+
+    private fun shareLog(file: File) {
+        try {
+            val context = requireContext()
+            val uri = FileProvider.getUriForFile(context, context.packageName + ".logs", file)
+            val send = Intent(Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_STREAM, uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            startActivity(Intent.createChooser(send, getString(R.string.logs_share)))
+        } catch (e: Exception) {
+            toast(getString(R.string.logs_save_failed, e.message ?: e.javaClass.simpleName))
+        }
+    }
+
+    // What the system currently holds for this app: its tasks (one per card
+    // in the recents screen) and its processes. Cloned apps show up here as
+    // BlackBox's own.
+    private fun describeState(context: Context): String {
+        val text = StringBuilder()
+        text.append("device: ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL)
+                .append(", Android ").append(Build.VERSION.RELEASE).append(" (API ").append(Build.VERSION.SDK_INT).append(")\n")
+        try {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            text.append("--- tasks ---\n")
+            am.appTasks.forEach { task ->
+                val info = task.taskInfo
+                text.append("task ").append(if (Build.VERSION.SDK_INT >= 29) info.taskId else info.id)
+                        .append(" activities=").append(info.numActivities)
+                        .append(" base=").append(info.baseIntent.component?.shortClassName)
+                        .append(" top=").append(info.topActivity?.shortClassName)
+                        .append(" label=").append(info.taskDescription?.label)
+                        .append('\n')
+            }
+            text.append("--- processes ---\n")
+            am.runningAppProcesses?.forEach {
+                text.append(it.processName).append(" pid=").append(it.pid)
+                        .append(" importance=").append(it.importance).append('\n')
+            }
+        } catch (e: Exception) {
+            text.append("state unavailable: ").append(e).append('\n')
+        }
+        text.append("--- logcat ---\n")
+        return text.toString()
     }
 }
